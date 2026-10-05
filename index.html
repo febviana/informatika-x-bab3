@@ -3083,7 +3083,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           tmo,
           XC,
           XS,
-          PTX;
+          PTX,
+          BD = {};
         const E = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
         const rg = (a, b) => ({
           r0: Math.min(a[0], b[0]),
@@ -3106,7 +3107,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
             Home:
               gp("Clipboard", bt("xpaste", "📋", "Paste") + bt("xcopy", "⧉", "Copy")) +
               gp("File", bt("xsave", "💾", "Save")) +
-              gp("Font", dm("B I U")),
+              gp("Font", dm("B I U") + bt("xbd", "▦", "Borders ▾")),
             Insert: gp("Charts", bt("xch", "📊", "Chart")),
           },
           w: {
@@ -3324,6 +3325,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
               t.className =
                 (m && r >= RG.r0 && r <= RG.r1 && c >= RG.c0 && c <= RG.c1 ? "rs" : "") +
                 (CB && CB.on && r >= CB.r0 && r <= CB.r1 && c >= CB.c0 && c <= CB.c1 ? " cp" : "");
+              const bo = BD[r + "," + c] || {},
+                L = "2px solid #000";
+              t.style.borderTop = bo.t ? L : "";
+              t.style.borderBottom = bo.b ? L : "";
+              t.style.borderLeft = bo.l ? L : "";
+              t.style.borderRight = bo.r ? L : "";
             });
           const t = $(`#sh td[data-r="${AN[0]}"][data-c="${AN[1]}"]`),
             w = $("#xw"),
@@ -3420,6 +3427,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           ch();
           rX();
           foc(1);
+        }
+        function bdr(k) {
+          cm();
+          for (let r = RG.r0; r <= RG.r1; r++)
+            for (let c = RG.c0; c <= RG.c1; c++) {
+              const o = (BD[r + "," + c] = BD[r + "," + c] || { t: 0, b: 0, l: 0, r: 0 });
+              if (k == "n") o.t = o.b = o.l = o.r = 0;
+              else {
+                if (k == "a" || k == "o" || k == "t") if (k == "a" || r == RG.r0) o.t = o.t || +(k == "a" || r == RG.r0);
+                if (k == "a" || k == "o" || k == "b") if (k == "a" || r == RG.r1) o.b = 1;
+                if (k == "a" || k == "o" || k == "l") if (k == "a" || c == RG.c0) o.l = 1;
+                if (k == "a" || k == "o" || k == "r") if (k == "a" || c == RG.c1) o.r = 1;
+              }
+            }
+          rX();
+          foc(1);
+          toast(k == "n" ? "Border dihapus." : "Border diterapkan pada " + nm() + ".");
         }
         function xs() {
           if (saved) return toast("Tersimpan: " + fname);
@@ -3841,6 +3865,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
             case "pcopy":
               pcp();
               break;
+            case "xbd":
+              menu(el, [
+                ["All Borders", () => bdr("a")],
+                ["Outside Borders", () => bdr("o")],
+                ["Bottom Border", () => bdr("b")],
+                ["Top Border", () => bdr("t")],
+                ["Left Border", () => bdr("l")],
+                ["Right Border", () => bdr("r")],
+                ["No Border", () => bdr("n")],
+              ]);
+              break;
             case "xcopy":
               xc();
               break;
@@ -4043,6 +4078,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           XC = null;
           XS = 0;
           PTX = 0;
+          BD = {};
           CH = {
             on: 0,
             t: "Chart Title",
@@ -4661,5 +4697,135 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         if (savePdf(L, "Refleksi Bab 3 - " + n + " - " + k)) $("#msg").innerHTML = hintH();
       };
     </script>
-  </body>
+  <!-- ===== PATCH HP: tempel SEBELUM </body>, setelah <script> terakhir ===== -->
+<style>
+  #mbar{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13px}
+  #mbar p{margin:0 0 8px}
+  #mbar .r{display:flex;flex-wrap:wrap;gap:8px}
+  #mbar [data-g]{display:none}
+  #mbar[data-app="x"] [data-g="x"],#mbar[data-app="w"] [data-g="w"],
+  #mbar[data-app="p"] [data-g="p"],#mbar[data-app=""] [data-g="n"]{display:block}
+  #mbar button{min-height:42px}
+  .dsk{touch-action:manipulation}
+  #sh.blok{touch-action:none;outline:3px solid var(--gold)}
+  @media (max-width:760px){
+    .dsk{height:min(74dvh,620px);min-height:440px}
+    .sh td{width:72px;min-width:72px;max-width:72px;height:32px}
+    .sh th{height:32px}
+    .app .rb button{min-height:44px;min-width:50px}
+    .app .tt span a{padding:6px 14px}
+    .ic{width:92px}
+  }
+</style>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const T = matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoints > 0;
+  let blok = false, lastR = null, tm;
+  const ev = (el, t, o) => el && el.dispatchEvent(new MouseEvent(t, Object.assign({ bubbles: true, cancelable: true, button: 0 }, o || {})));
+  const up = () => ev(document, "mouseup");
+  const cell = (r, c) => $(`#sh td[data-r="${r}"][data-c="${c}"]`);
+
+  function toast(m) {
+    const d = $("#dsk"); if (!d) return;
+    const o = d.querySelector(".ts"); o && o.remove();
+    clearTimeout(tm);
+    d.append(Object.assign(document.createElement("div"), { className: "ts", textContent: m }));
+    tm = setTimeout(() => { const t = d.querySelector(".ts"); t && t.remove(); }, 3200);
+  }
+  /* ketik ke sel lewat jalur yang sama dengan simulasi (mousedown + change) */
+  function put(r, c, v) {
+    ev(cell(r, c), "mousedown"); up();
+    const i = $("#ci"); i.value = v;
+    i.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  function fill(rows) {
+    rows.forEach((r, i) => r.forEach((v, j) => put(i, j, v)));
+    ev(cell(0, 0), "mousedown"); up();
+    toast("Contoh tabel terisi. Sekarang coba Blok tabel, lalu Copy.");
+  }
+  function blokTabel() {
+    let r0 = 99, r1 = -1, c0 = 99, c1 = -1;
+    const add = (r, c) => { r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c); };
+    document.querySelectorAll("#sh td").forEach((t) => { if (t.textContent.trim()) add(+t.dataset.r, +t.dataset.c); });
+    const m = /^([A-H])(\d+)/.exec(($("#nb") || {}).textContent || "");
+    if (m && $("#ci").value.trim()) add(+m[2] - 1, m[1].charCodeAt(0) - 65);
+    if (r1 < 0) return toast("Tabel masih kosong. Ketik data dulu, atau ketuk Isi contoh.");
+    ev(cell(r0, c0), "mousedown"); ev(cell(r1, c1), "mouseover"); up();
+    toast("Tabel diblok. Sekarang ketuk Copy di tab Home.");
+  }
+  const key = (k) => { const i = $("#ci"); i && i.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true })); };
+  function blokWord() {
+    const p = $("#pg");
+    if (!p || !p.textContent.trim()) return toast("Ketik kalimat dulu di Word.");
+    const s = getSelection(); let n = null;
+    if (s.anchorNode && p.contains(s.anchorNode)) { n = s.anchorNode; while (n && n.parentNode !== p) n = n.parentNode; }
+    if (!n || !n.textContent.trim()) { const k = [...p.childNodes].filter((x) => x.textContent.trim()); n = k[k.length - 1]; }
+    const r = document.createRange(); r.selectNodeContents(n);
+    s.removeAllRanges(); s.addRange(r); lastR = r.cloneRange();
+    toast("Kalimat diblok. Sekarang ketuk Copy.");
+  }
+  const A = {
+    s1: () => fill([["Hari", "Nilai"], ["Hari 1", "60"], ["Hari 2", "75"], ["Hari 3", "90"]]),
+    s2: () => fill([["Nama", "Alamat"], ["Alya", "Bandung"], ["Bima", "Jakarta"], ["Citra", "Cikarang"]]),
+    bt: blokTabel, en: () => key("Enter"), tb: () => key("Tab"), bw: blokWord,
+    bm: () => { blok = !blok; toast(blok ? "Mode blok geser AKTIF: geser jari di sel untuk memblok. Ketuk lagi untuk kembali menggulir." : "Mode blok geser mati. Geser jari untuk menggulir lembar."); refresh(); },
+  };
+  const HTML =
+    '<b>Alat bantu</b> <small>(opsional, mempermudah di layar sentuh)</small>' +
+    '<div data-g="n"><p>Ketuk ikon di desktop untuk membuka Excel, Word, atau PowerPoint.</p></div>' +
+    '<div data-g="x"><p>Ketuk sel lalu ketik (atau ketik di kotak <b>fx</b>). Tombol Enter/Tab di bawah menggantikan keyboard.</p><div class="r">' +
+    '<button class="btn s" data-h="s1">Isi contoh: Hari &amp; Nilai</button><button class="btn s" data-h="s2">Isi contoh: Nama &amp; Alamat</button>' +
+    '<button class="btn s" data-h="bt">Blok tabel</button><button class="btn s" data-h="en">Enter ↓</button><button class="btn s" data-h="tb">Tab →</button>' +
+    '<button class="btn s" data-h="bm" id="bm" style="display:none"></button></div></div>' +
+    '<div data-g="w"><p>Ketuk halaman untuk mengetik. Tahan teks untuk memblok, atau ketuk Blok kalimat. Lalu pakai Copy / Paste di tab Home.</p><div class="r"><button class="btn s" data-h="bw">Blok kalimat</button></div></div>' +
+    '<div data-g="p"><p>Gunakan tab Home → Paste, atau tab Insert → Table / Chart / Object. Ketuk dua kali objek di slide untuk mengubahnya.</p></div>';
+
+  function wire() {
+    const s = $("#sh"); if (!s) return;
+    s.classList.toggle("blok", blok);
+    if (s._w) return; s._w = 1;
+    const at = (e) => { const t = e.touches[0], el = document.elementFromPoint(t.clientX, t.clientY); return el && el.closest && el.closest("td"); };
+    s.addEventListener("touchstart", (e) => { if (!blok) return; const c = at(e); if (c) { e.preventDefault(); ev(c, "mousedown"); } }, { passive: false });
+    s.addEventListener("touchmove", (e) => { if (!blok) return; e.preventDefault(); const c = at(e); c && ev(c, "mouseover"); }, { passive: false });
+    s.addEventListener("touchend", () => { if (blok) up(); });
+    s.addEventListener("click", () => setTimeout(() => { const i = $("#ci"); i && i.focus(); }, 0));
+  }
+  function mount() {
+    const d = $("#dsk"); if (!d || $("#mbar")) return;
+    const b = document.createElement("div"); b.id = "mbar"; b.innerHTML = HTML; d.after(b);
+    b.addEventListener("mousedown", (e) => { if (e.target.closest("button")) e.preventDefault(); });
+    b.addEventListener("click", (e) => { const a = e.target.closest("[data-h]"); a && A[a.dataset.h](); });
+    /* Copy di Word/PowerPoint: pulihkan blok yang hilang karena ketukan tombol */
+    d.addEventListener("selectionchange", () => {});
+    d.addEventListener("click", (e) => {
+      if (!e.target.closest('[data-a="wcopy"],[data-a="pcopy"]')) return;
+      if (!getSelection().toString().trim() && lastR) {
+        try { const s = getSelection(); s.removeAllRanges(); s.addRange(lastR); } catch (x) {}
+      }
+    }, true);
+  }
+  document.addEventListener("selectionchange", () => {
+    const s = getSelection();
+    if (s.rangeCount && s.toString().trim() && s.anchorNode && s.anchorNode.parentElement && s.anchorNode.parentElement.closest(".page,.slide"))
+      lastR = s.getRangeAt(0).cloneRange();
+  });
+  function refresh() {
+    mount(); wire();
+    const m = $("#mbar"); if (!m) return;
+    const w = document.querySelector("#dsk .win.on");
+    m.dataset.app = w ? w.id.slice(2) : "";
+    const bm = $("#bm");
+    if (bm) { bm.style.display = T ? "" : "none"; bm.textContent = blok ? "Blok geser: HIDUP" : "Blok geser: mati"; }
+    if (T) {
+      const tb = document.querySelector("#tb i");
+      if (tb) tb.textContent = "Ketuk ikon untuk membuka aplikasi";
+    }
+  }
+  if (T) { const b = document.querySelector("#v-sim p b"); b && (b.textContent = "Ketuk ikon"); }
+  setInterval(refresh, 350); refresh();
+})();
+</script>
+
+</body>
 </html>
